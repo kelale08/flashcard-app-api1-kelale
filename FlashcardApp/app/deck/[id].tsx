@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native"
 import { useLocalSearchParams, router } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { ArrowLeft, Plus } from "lucide-react-native"
+import { type Deck, type DeckParams, DECK_COLORS } from "../types" // Importiere die Typen
 
 export default function DeckDetailScreen() {
-  const { id } = useLocalSearchParams()
-  const [deck, setDeck] = useState(null)
+  const { id } = useLocalSearchParams<DeckParams>()
+  const [deck, setDeck] = useState<Deck | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export default function DeckDetailScreen() {
     try {
       const storedDecks = await AsyncStorage.getItem("decks")
       if (storedDecks) {
-        const decks = JSON.parse(storedDecks)
+        const decks: Deck[] = JSON.parse(storedDecks)
         const foundDeck = decks.find((d) => d.id === id)
         if (foundDeck) {
           setDeck(foundDeck)
@@ -47,7 +48,7 @@ export default function DeckDetailScreen() {
   if (!deck) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Deck nicht gefunden</Text>
+        <Text style={styles.errorText}>Das Deck wurde leider nicht gefunden</Text>
         <TouchableOpacity style={styles.button} onPress={() => router.push("/")}>
           <Text style={styles.buttonText}>Zurück zur Übersicht</Text>
         </TouchableOpacity>
@@ -57,7 +58,7 @@ export default function DeckDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: deck.color || DECK_COLORS.blue }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.push("/")}>
           <ArrowLeft size={24} color="#ffffff" />
         </TouchableOpacity>
@@ -74,29 +75,17 @@ export default function DeckDetailScreen() {
         <Text style={styles.statsText}>{deck.cards?.length || 0} Karten in diesem Deck</Text>
       </View>
 
-      {deck.cards && deck.cards.length > 0 ? (
-        <FlatList
-          data={deck.cards}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.cardItem}>
-              <Text style={styles.cardFront}>{item.front}</Text>
-              <Text style={styles.cardBack}>{item.back}</Text>
-            </View>
-          )}
-          contentContainerStyle={styles.cardsList}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Keine Karten in diesem Deck. Füge deine erste Karte hinzu!</Text>
-        </View>
-      )}
+      {/* Die Karten werden hier noch nicht angezeigt, aber die Daten sind bereits vorhanden */}
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>
+          Dieses Deck enthält {deck.cards?.length || 0} Karten. Die Anzeige der Karten wird in Tag 3 implementiert.
+        </Text>
+      </View>
 
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: deck.color || DECK_COLORS.blue }]}
         onPress={() => {
-          // Hier würde die Navigation zur "Karte hinzufügen"-Seite erfolgen
-          Alert.alert("Info", "Funktion zum Hinzufügen von Karten wird bald implementiert.")
+          Alert.alert("Info", "Funktion zum Hinzufügen von Karten wird in Tag 3 implementiert.")
         }}
       >
         <Plus size={24} color="#ffffff" />
@@ -114,8 +103,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomWidth: 3,
   },
   backButton: {
     marginRight: 15,
@@ -181,7 +169,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#1E88E5",
     justifyContent: "center",
     alignItems: "center",
     elevation: 5,

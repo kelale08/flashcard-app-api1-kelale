@@ -10,42 +10,74 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native"
 import { useRouter } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { type Deck, type Card, DECK_COLORS } from "./types" // Importiere die Typen und Farben
 
 export default function CreateDeckScreen() {
   const router = useRouter()
   const [deckName, setDeckName] = useState("")
   const [deckDescription, setDeckDescription] = useState("")
+  const [selectedColor, setSelectedColor] = useState(DECK_COLORS.blue) // Standard: Blau
   const [isLoading, setIsLoading] = useState(false)
 
   const createDeck = async () => {
     if (!deckName.trim()) {
-      Alert.alert("Bitte gib einen Namen für das Deck ein.")
+      Alert.alert("Fehler", "Bitte gib einen Namen für das Deck ein.")
       return
     }
 
     setIsLoading(true)
     try {
-     
+      // Bestehende Decks laden
       const storedDecksJson = await AsyncStorage.getItem("decks")
-      const storedDecks = storedDecksJson ? JSON.parse(storedDecksJson) : []
+      const storedDecks: Deck[] = storedDecksJson ? JSON.parse(storedDecksJson) : []
 
-    
-      const newDeck = {
-        id: Date.now().toString(), 
+      // Neue Deck-ID generieren
+      const deckId = Date.now().toString()
+
+      // Vordefinierte Karten erstellen
+      const defaultCards: Card[] = [
+        {
+          id: `${deckId}-card-1`,
+          deckId: deckId,
+          front: "Was ist React Native?",
+          back: "Ein Framework zur App-Entwicklung mit JavaScript.",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: `${deckId}-card-2`,
+          deckId: deckId,
+          front: "Was macht useState?",
+          back: "Es speichert lokale Zustände in einer Komponente.",
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: `${deckId}-card-3`,
+          deckId: deckId,
+          front: "Wofür ist AsyncStorage?",
+          back: "Zum Speichern von Daten lokal auf dem Gerät.",
+          createdAt: new Date().toISOString(),
+        },
+      ]
+
+      // Neues Deck erstellen mit vordefinierten Cards und ausgewählter Farbe
+      const newDeck: Deck = {
+        id: deckId,
         name: deckName.trim(),
         description: deckDescription.trim(),
-        cards: [],
+        color: selectedColor, // Speichere die ausgewählte Farbe
+        cards: defaultCards,
         createdAt: new Date().toISOString(),
       }
 
-      
+      // Deck zur Liste hinzufügen und speichern
       const updatedDecks = [...storedDecks, newDeck]
       await AsyncStorage.setItem("decks", JSON.stringify(updatedDecks))
 
-      Alert.alert("Deck wurde erfolgreich erstellt!", [{ text: "OK", onPress: () => router.push("/") }])
+      Alert.alert("Erfolg", "Deck wurde erfolgreich erstellt!", [{ text: "OK", onPress: () => router.push("/") }])
     } catch (error) {
       console.error("Fehler beim Erstellen des Decks:", error)
       Alert.alert("Fehler", "Das Deck konnte nicht erstellt werden.")
@@ -54,55 +86,80 @@ export default function CreateDeckScreen() {
     }
   }
 
+  // Rendere einen Farbkreis
+  const renderColorCircle = (color: string) => (
+    <TouchableOpacity
+      key={color}
+      style={[styles.colorCircle, { backgroundColor: color }, selectedColor === color && styles.selectedColorCircle]}
+      onPress={() => setSelectedColor(color)}
+    >
+      {selectedColor === color && <View style={styles.colorCircleCheckmark} />}
+    </TouchableOpacity>
+  )
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Neues Deck erstellen</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Neues Deck erstellen</Text>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Name des Decks</Text>
-          <TextInput
-            style={styles.input}
-            value={deckName}
-            onChangeText={setDeckName}
-            placeholder="z.B. Spanisch Vokabeln"
-            placeholderTextColor="#666"
-            maxLength={50}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Name des Decks</Text>
+            <TextInput
+              style={styles.input}
+              value={deckName}
+              onChangeText={setDeckName}
+              placeholder="z.B. Spanisch Vokabeln"
+              placeholderTextColor="#666"
+              maxLength={50}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Beschreibung (optional)</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={deckDescription}
+              onChangeText={setDeckDescription}
+              placeholder="Kurze Beschreibung des Decks..."
+              placeholderTextColor="#666"
+              multiline
+              numberOfLines={4}
+              maxLength={200}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Farbe auswählen</Text>
+            <View style={styles.colorPickerContainer}>
+              {Object.values(DECK_COLORS).map((color) => renderColorCircle(color))}
+            </View>
+          </View>
+
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={() => router.push("/")}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>Abbrechen</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.createButton,
+                { backgroundColor: selectedColor },
+                isLoading && styles.disabledButton,
+              ]}
+              onPress={createDeck}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>{isLoading ? "Wird erstellt..." : "Deck erstellen"}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Beschreibung (optional)</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={deckDescription}
-            onChangeText={setDeckDescription}
-            placeholder="Kurze Beschreibung des Decks..."
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={4}
-            maxLength={200}
-          />
-        </View>
-
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={() => router.push("/")}
-            disabled={isLoading}
-          >
-            <Text style={styles.buttonText}>Abbrechen</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.createButton, isLoading && styles.disabledButton]}
-            onPress={createDeck}
-            disabled={isLoading}
-          >
-            <Text style={styles.buttonText}>{isLoading ? "Wird erstellt..." : "Deck erstellen"}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   )
 }
@@ -111,6 +168,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
   formContainer: {
     flex: 1,
@@ -143,6 +203,29 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: "top",
   },
+  colorPickerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  colorCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginHorizontal: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedColorCircle: {
+    borderWidth: 3,
+    borderColor: "#ffffff",
+  },
+  colorCircleCheckmark: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+  },
   buttonGroup: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -160,7 +243,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   createButton: {
-    backgroundColor: "#1E88E5",
     marginLeft: 10,
   },
   disabledButton: {

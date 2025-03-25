@@ -5,9 +5,10 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert } from "react
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { router, useFocusEffect } from "expo-router"
 import { Trash2 } from "lucide-react-native"
+import { type Deck, DECK_COLORS } from "./types" // Importiere die Typen
 
 export default function HomeScreen() {
-  const [decks, setDecks] = useState([])
+  const [decks, setDecks] = useState<Deck[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Diese Funktion wird jedes Mal aufgerufen, wenn der Bildschirm fokussiert wird
@@ -34,7 +35,7 @@ export default function HomeScreen() {
     }
   }
 
-  const deleteDeck = async (deckId) => {
+  const deleteDeck = async (deckId: string) => {
     try {
       // Bestätigung vor dem Löschen
       Alert.alert("Deck löschen", "Möchtest du dieses Deck wirklich löschen?", [
@@ -55,9 +56,9 @@ export default function HomeScreen() {
     }
   }
 
-  const renderDeckItem = ({ item }) => (
+  const renderDeckItem = ({ item }: { item: Deck }) => (
     <TouchableOpacity style={styles.deckWrapper} onPress={() => router.push(`/deck/${item.id}`)}>
-      <View style={styles.deck}>
+      <View style={[styles.deck, { borderLeftWidth: 5, borderLeftColor: item.color || DECK_COLORS.blue }]}>
         <Text style={styles.deckText}>{item.name}</Text>
         {item.description ? (
           <Text style={styles.deckDescription} numberOfLines={2}>
@@ -151,6 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     minHeight: 100,
+    overflow: "hidden",
   },
   deckText: {
     fontSize: 18,
