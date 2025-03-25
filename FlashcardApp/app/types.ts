@@ -1,4 +1,3 @@
-// Definiert die Struktur einer Karteikarte
 export interface Card {
     id: string // Eindeutige ID der Karte
     front: string // Vorderseite/Frage der Karte
@@ -53,8 +52,8 @@ export interface Card {
   // Interface für Benutzereinstellungen
   export interface UserSettings {
     darkMode: boolean // Dunkler Modus aktiviert?
-    cardReviewInterval: number // Intervall für Kartenwiederholungen (in Tagen)
-    notificationsEnabled: boolean // Benachrichtigungen aktiviert?
+    cardReviewInterval: number
+    notificationsEnabled: boolean
   }
   
   // Verfügbare Deck-Farben

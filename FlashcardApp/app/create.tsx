@@ -149,7 +149,7 @@ export default function CreateDeckScreen() {
               style={[
                 styles.button,
                 styles.createButton,
-                { backgroundColor: selectedColor },
+                { backgroundColor: '#2a2a2a'},
                 isLoading && styles.disabledButton,
               ]}
               onPress={createDeck}
@@ -218,13 +218,12 @@ const styles = StyleSheet.create({
   },
   selectedColorCircle: {
     borderWidth: 3,
-    borderColor: "#ffffff",
+    borderColor: "#fff",
   },
   colorCircleCheckmark: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
   },
   buttonGroup: {
     flexDirection: "row",
