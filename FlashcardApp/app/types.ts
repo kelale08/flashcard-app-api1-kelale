@@ -1,3 +1,4 @@
+
 export interface Card {
     id: string // Eindeutige ID der Karte
     front: string // Vorderseite/Frage der Karte
