@@ -14,8 +14,8 @@ import {
 } from "react-native"
 import { useRouter } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import type { Deck, Card } from "./types"
-import styles from "./styles"
+import type { Deck, Card } from "../types"
+import styles from "../styles"
 import ColorPicker from "react-native-wheel-color-picker"
 
 export default function CreateDeckScreen() {

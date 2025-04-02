@@ -1,12 +1,39 @@
-import { Slot } from "expo-router"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { Tabs } from "expo-router"
+import { SafeAreaProvider } from "react-native-safe-area-context"
 import { StyleSheet } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 
 export default function Layout() {
   return (
-    <SafeAreaView style={styles.container}>
-      <Slot />
-    </SafeAreaView>
+    <SafeAreaProvider style={styles.container}>
+      <Tabs
+        screenOptions={{
+          // Diese Zeile entfernt den "tabs" Header
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: "#1E1E1E",
+            borderTopColor: "#333333",
+          },
+          tabBarActiveTintColor: "#29ABE2",
+          tabBarInactiveTintColor: "#888888",
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="create"
+          options={{
+            title: "Create",
+            tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size} color={color} />,
+          }}
+        />
+      </Tabs>
+    </SafeAreaProvider>
   )
 }
 
@@ -16,6 +43,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
   },
 })
-
-
 
