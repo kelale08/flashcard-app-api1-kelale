@@ -8,7 +8,6 @@ export default function Layout() {
     <SafeAreaProvider style={styles.container}>
       <Tabs
         screenOptions={{
-          // Diese Zeile entfernt den "tabs" Header
           headerShown: false,
           tabBarStyle: {
             backgroundColor: "#1E1E1E",
