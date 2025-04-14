@@ -18,11 +18,18 @@ import type { Deck, Card } from "../types"
 import styles from "../styles"
 import ColorPicker from "react-native-wheel-color-picker"
 
+// Function to generate a random color from predefined list
+function getRandomColor(): string {
+  const colors = ['#FFD700', '#90EE90', '#87CEFA', '#FFB6C1', '#FFA07A']; // Yellow, Green, Blue, Pink, Orange
+  const randomIndex = Math.floor(Math.random() * colors.length);
+  return colors[randomIndex];
+}
+
 export default function CreateDeckScreen() {
   const router = useRouter()
   const [deckName, setDeckName] = useState("")
   const [deckDescription, setDeckDescription] = useState("")
-  const [selectedColor, setSelectedColor] = useState("#29ABE2") // Default blue color
+  const [selectedColor, setSelectedColor] = useState(getRandomColor()) // Initialize with a random color
   const [isLoading, setIsLoading] = useState(false)
   const pickerRef = useRef(null)
 
@@ -170,8 +177,6 @@ export default function CreateDeckScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
     </KeyboardAvoidingView>
   )
 }
-
