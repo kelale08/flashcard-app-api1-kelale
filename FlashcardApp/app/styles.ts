@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
 
   // Text styles
   title: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: "bold",
     color: "#ffffff",
     textAlign: "center",
@@ -470,7 +470,62 @@ const styles = StyleSheet.create({
     borderColor: "#ffffff",
     marginRight: 15,
   },
-})
 
+
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    width: '85%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#aaaaaa',
+    marginBottom: 16,
+  },
+  input: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    color: '#ffffff',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  // Color selection specific styles
+  colorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  colorCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#444',
+    margin: 5,
+  },
+  colorCircleSelected: {
+    borderColor: '#ffffff',
+    borderWidth: 3,
+  },
+})
 export default styles
 

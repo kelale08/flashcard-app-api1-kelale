@@ -18,7 +18,7 @@ import type { Deck, Card } from "../types"
 import styles from "../styles"
 import ColorPicker from "react-native-wheel-color-picker"
 
-// Function to generate a random color from predefined list
+
 function getRandomColor(): string {
   const colors = ['#FFD700', '#90EE90', '#87CEFA', '#FFB6C1', '#FFA07A']; // Yellow, Green, Blue, Pink, Orange
   const randomIndex = Math.floor(Math.random() * colors.length);
@@ -45,14 +45,13 @@ export default function CreateDeckScreen() {
 
     setIsLoading(true)
     try {
-      // Bestehende Decks laden
+
       const storedDecksJson = await AsyncStorage.getItem("decks")
       const storedDecks: Deck[] = storedDecksJson ? JSON.parse(storedDecksJson) : []
 
-      // Neue Deck-ID generieren
+
       const deckId = Date.now().toString()
 
-      // Vordefinierte Karten erstellen
       const defaultCards: Card[] = [
         {
           id: `${deckId}-card-1`,
@@ -77,7 +76,7 @@ export default function CreateDeckScreen() {
         },
       ]
 
-      // Neues Deck erstellen mit vordefinierten Cards und ausgewählter Farbe
+   
       const newDeck: Deck = {
         id: deckId,
         name: deckName.trim(),
