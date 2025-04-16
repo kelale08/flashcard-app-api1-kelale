@@ -20,7 +20,7 @@ import ColorPicker from "react-native-wheel-color-picker"
 
 
 function getRandomColor(): string {
-  const colors = ['#FFD700', '#90EE90', '#87CEFA', '#FFB6C1', '#FFA07A']; // Yellow, Green, Blue, Pink, Orange
+  const colors = ['#FFD700', '#90EE90', '#87CEFA', '#FFB6C1', '#FFA07A']; 
   const randomIndex = Math.floor(Math.random() * colors.length);
   return colors[randomIndex];
 }

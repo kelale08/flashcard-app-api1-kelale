@@ -1,12 +1,20 @@
-# Tagesbericht - 14.04.25
+# Tagesbericht - 16.04.25
+
 
 ## 🔨 Was habe ich gemacht?
 
-Heute habe ich mir vorgenommen, dass ich die Aufgabe Floating-Menü für Deck-Optionen zu machen. Ich habe meine Create Seite verändert, so dass es jetzt eine Standart Farbe hat. Danach habe ich geschaut, dass ich ein paar Bugfixes machen konnte für das CSS.
+Heute habe ich an der Erweiterung der Stylesheets für das Flashcard-App gearbeitet. Mein Hauptfokus lag auf der Implementierung der Styles für das neue Floating-Menü (Modal) und die Farbauswahl-Komponente.
+Ich habe folgende neue Style-Elemente zur styles.ts Datei hinzugefügt:
 
-Das ganze sieht jetzt so aus: 
-![alt text]({2D4BDCB1-59F9-418C-8E5C-BEC94B4386AE}.png)
+- overlay: Ein halbtransparenter Hintergrund für das Modal
+- modal: Container für das Floating-Menü mit abgerundeten Ecken
+- title und subtitle: Textformatierung für die Überschriften im Modal
+- input: Styling für die Texteingabefelder
+- colorRow: Horizontale Anordnung der Farbauswahl
+- colorCircle: Runde Buttons für die Farbauswahl
 
-## ✅ Fazit
-
-Ich konnte heute den den Auftraf erledigen und bin somit zufrieden für heute. Am Morgen konnte ich ein wenig produktiver arbeiten als am Nachmittag. Die anderen haben mich relativ ruhig erlebt.
+Diese Styles werden in der DeckOptionsModal.tsx verwendet werden, um ein benutzerfreundliches und visuell ansprechendes Modal für die Deck-Optionen zu erstellen.
+Außerdem habe ich mir die bestehende [deckId].tsx Datei angesehen, die bereits korrekt implementiert ist und dynamisch den Titel des ausgewählten Decks basierend auf der ID aus dem AsyncStorage lädt und anzeigt.
+Als letztes habe ich noch den Tab unten erweitert.
+![alt text]({21FAABEB-D02F-48ED-8FDD-242648A2BEAC}.png)
+Jedoch funktioniert es noch nicht ganz..
