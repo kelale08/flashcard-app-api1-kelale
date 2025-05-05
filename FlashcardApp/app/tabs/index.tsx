@@ -15,22 +15,55 @@ import {
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { router, useFocusEffect } from "expo-router"
-import { Trash2, Edit, Plus, X, ChevronRight, Save, MoreVertical } from "lucide-react-native"
-import { type Deck, type Card, DECK_COLORS } from "../types"
+import { Trash2, Edit, Plus, X, ChevronRight, Save, MoreVertical, HelpCircle, FileQuestion } from "lucide-react-native"
+import { type Deck, DECK_COLORS } from "../types"
 import styles from "../styles"
 import ColorPicker from "react-native-wheel-color-picker"
 
+// Define the new card types
+interface BaseCard {
+  id: string
+  deckId?: string
+  createdAt?: string
+  lastReviewed?: string
+  type: "card" | "quiz"
+}
+
+interface StandardCard extends BaseCard {
+  type: "card"
+  question: string
+  answer: string
+}
+
+interface QuizCard extends BaseCard {
+  type: "quiz"
+  question: string
+  options: string[]
+  correctAnswerIndex: number
+}
+
+// Union type for all card types
+type FlashCard = StandardCard | QuizCard
+
+// Extended Deck type to support both card types
+interface ExtendedDeck extends Omit<Deck, "cards"> {
+  cards: FlashCard[]
+}
+
 export default function HomeScreen() {
-  const [decks, setDecks] = useState<Deck[]>([])
+  const [decks, setDecks] = useState<ExtendedDeck[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null)
+  const [selectedDeck, setSelectedDeck] = useState<ExtendedDeck | null>(null)
   const [isCardModalVisible, setIsCardModalVisible] = useState(false)
-  const [editingCard, setEditingCard] = useState<Card | null>(null)
-  const [cardFront, setCardFront] = useState("")
-  const [cardBack, setCardBack] = useState("")
+  const [editingCard, setEditingCard] = useState<FlashCard | null>(null)
+  const [cardQuestion, setCardQuestion] = useState("")
+  const [cardAnswer, setCardAnswer] = useState("")
+  const [cardOptions, setCardOptions] = useState<string[]>(["", "", "", ""])
+  const [correctAnswerIndex, setCorrectAnswerIndex] = useState<number>(0)
+  const [cardType, setCardType] = useState<"card" | "quiz">("card")
   const [isActionMenuVisible, setIsActionMenuVisible] = useState(false)
   const [actionMenuPosition, setActionMenuPosition] = useState({ x: 0, y: 0 })
-  const [longPressedDeck, setLongPressedDeck] = useState<Deck | null>(null)
+  const [longPressedDeck, setLongPressedDeck] = useState<ExtendedDeck | null>(null)
   const [isEditDeckModalVisible, setIsEditDeckModalVisible] = useState(false)
   const [editDeckName, setEditDeckName] = useState("")
   const [editDeckDescription, setEditDeckDescription] = useState("")
@@ -50,7 +83,36 @@ export default function HomeScreen() {
     try {
       const storedDecks = await AsyncStorage.getItem("decks")
       if (storedDecks) {
-        setDecks(JSON.parse(storedDecks))
+        // Convert existing decks to the new format if needed
+        const parsedDecks = JSON.parse(storedDecks)
+        const convertedDecks = parsedDecks.map((deck: Deck) => {
+          // Convert old cards format to new format if needed
+          const convertedCards = deck.cards.map((card: any) => {
+            if (card.type) {
+              // Card already has a type, return as is
+              return card
+            } else if (card.front && card.back) {
+              // Old format card, convert to new format
+              return {
+                id: card.id,
+                type: "card",
+                question: card.front,
+                answer: card.back,
+                deckId: card.deckId,
+                createdAt: card.createdAt,
+                lastReviewed: card.lastReviewed,
+              }
+            }
+            return card
+          })
+
+          return {
+            ...deck,
+            cards: convertedCards,
+          }
+        })
+
+        setDecks(convertedDecks)
       } else {
         setDecks([])
       }
@@ -84,7 +146,7 @@ export default function HomeScreen() {
     }
   }
 
-  const handleLongPress = (deck: Deck, event: any) => {
+  const handleLongPress = (deck: ExtendedDeck, event: any) => {
     // Get the position of the long press
     const { pageX, pageY } = event.nativeEvent
 
@@ -153,37 +215,69 @@ export default function HomeScreen() {
     }
   }
 
-  const showCardModal = (deck: Deck) => {
+  const showCardModal = (deck: ExtendedDeck) => {
     setSelectedDeck(deck)
     setIsCardModalVisible(true)
   }
 
-  const startEditingCard = (card: Card) => {
+  const startEditingCard = (card: FlashCard) => {
     setEditingCard(card)
-    setCardFront(card.front)
-    setCardBack(card.back)
+    setCardType(card.type)
+    setCardQuestion(card.question)
+
+    if (card.type === "card") {
+      setCardAnswer((card as StandardCard).answer)
+    } else if (card.type === "quiz") {
+      setCardOptions([...(card as QuizCard).options])
+      setCorrectAnswerIndex((card as QuizCard).correctAnswerIndex)
+    }
   }
 
   const startAddingCard = () => {
     if (!selectedDeck) return
 
-    const newCard: Card = {
+    // Default to standard card
+    setCardType("card")
+    setCardQuestion("")
+    setCardAnswer("")
+    setCardOptions(["", "", "", ""])
+    setCorrectAnswerIndex(0)
+
+    const newCard: StandardCard = {
       id: `${selectedDeck.id}-card-${Date.now()}`,
       deckId: selectedDeck.id,
-      front: "",
-      back: "",
+      type: "card",
+      question: "",
+      answer: "",
       createdAt: new Date().toISOString(),
     }
 
     setEditingCard(newCard)
-    setCardFront("")
-    setCardBack("")
   }
 
   const saveCardChanges = async () => {
     if (!selectedDeck || !editingCard) return
 
     try {
+      let updatedCard: FlashCard
+
+      if (cardType === "card") {
+        updatedCard = {
+          ...editingCard,
+          type: "card",
+          question: cardQuestion,
+          answer: cardAnswer,
+        } as StandardCard
+      } else {
+        updatedCard = {
+          ...editingCard,
+          type: "quiz",
+          question: cardQuestion,
+          options: [...cardOptions],
+          correctAnswerIndex: correctAnswerIndex,
+        } as QuizCard
+      }
+
       let updatedDecks
 
       if (selectedDeck.cards.some((card) => card.id === editingCard.id)) {
@@ -194,11 +288,7 @@ export default function HomeScreen() {
               ...deck,
               cards: deck.cards.map((card) => {
                 if (card.id === editingCard.id) {
-                  return {
-                    ...card,
-                    front: cardFront,
-                    back: cardBack,
-                  }
+                  return updatedCard
                 }
                 return card
               }),
@@ -212,14 +302,7 @@ export default function HomeScreen() {
           if (deck.id === selectedDeck.id) {
             return {
               ...deck,
-              cards: [
-                ...deck.cards,
-                {
-                  ...editingCard,
-                  front: cardFront,
-                  back: cardBack,
-                },
-              ],
+              cards: [...deck.cards, updatedCard],
             }
           }
           return deck
@@ -278,43 +361,72 @@ export default function HomeScreen() {
     }
   }
 
-  const renderDeckItem = ({ item }: { item: Deck }) => (
-    <View style={styles.gridItem}>
-      <TouchableOpacity
-        style={styles.gridDeckWrapper}
-        onPress={() => showCardModal(item)}
-        onLongPress={(event) => handleLongPress(item, event)}
-        delayLongPress={500}
-      >
-        <View style={styles.colorBand} backgroundColor={item.color || DECK_COLORS.blue} />
-        <View style={styles.gridDeckContent}>
-          <Text style={styles.deckText} numberOfLines={1}>
-            {item.name}
-          </Text>
-          {item.description ? (
-            <Text style={styles.deckDescription} numberOfLines={2}>
-              {item.description}
-            </Text>
-          ) : null}
-          <Text style={styles.cardCount}>{item.cards?.length || 0} Karten</Text>
+  // Check if a deck has quiz cards
+  const hasQuizCards = (deck: ExtendedDeck) => {
+    return deck.cards?.some((card) => card.type === "quiz")
+  }
 
-          <TouchableOpacity
-            style={styles.gridMoreButton}
-            onPress={(event) => handleLongPress(item, event)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MoreVertical size={16} color="#aaaaaa" />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </View>
-  )
+  const renderDeckItem = ({ item }: { item: ExtendedDeck }) => {
+    const quizCardsExist = hasQuizCards(item)
+
+    return (
+      <View style={styles.gridItem}>
+        <TouchableOpacity
+          style={styles.gridDeckWrapper}
+          onPress={() => showCardModal(item)}
+          onLongPress={(event) => handleLongPress(item, event)}
+          delayLongPress={500}
+        >
+          <View style={styles.colorBand} backgroundColor={item.color || DECK_COLORS.blue} />
+          <View style={styles.gridDeckContent}>
+            <Text style={styles.deckText} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {item.description ? (
+              <Text style={styles.deckDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+            ) : null}
+
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+              <Text style={styles.cardCount}>{item.cards?.length || 0} Karten</Text>
+
+              {quizCardsExist && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                    borderRadius: 12,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    marginLeft: 6,
+                  }}
+                >
+                  <FileQuestion size={12} color="#aaaaaa" />
+                  <Text style={{ fontSize: 10, color: "#aaaaaa", marginLeft: 3 }}>Quiz</Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.gridMoreButton}
+              onPress={(event) => handleLongPress(item, event)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MoreVertical size={16} color="#aaaaaa" />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   const CardItem = ({
     card,
     startEditingCard,
     deleteCard,
-  }: { card: Card; startEditingCard: (card: Card) => void; deleteCard: (cardId: string) => void }) => {
+  }: { card: FlashCard; startEditingCard: (card: FlashCard) => void; deleteCard: (cardId: string) => void }) => {
     const [isFlipped, setIsFlipped] = useState(false)
     const flipAnim = useRef(new Animated.Value(0)).current
 
@@ -353,39 +465,97 @@ export default function HomeScreen() {
       bottom: 0,
     }
 
-    return (
-      <View style={styles.cardItem}>
-        <TouchableOpacity activeOpacity={0.9} onPress={flipCard} style={styles.flipCardContainer}>
-          <Animated.View style={[styles.flipCard, frontAnimatedStyle]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardSideLabel}>Vorderseite:</Text>
-              <Text style={styles.cardText}>{card.front}</Text>
-            </View>
-          </Animated.View>
+    // Render different card types
+    if (card.type === "quiz") {
+      const quizCard = card as QuizCard
+      return (
+        <View style={styles.cardItem}>
+          <View style={[styles.flipCardContainer, { backgroundColor: "#2a2a2a", borderRadius: 8 }]}>
+            <View style={{ padding: 15 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                <FileQuestion size={16} color="#aaaaaa" />
+                <Text style={{ color: "#aaaaaa", fontSize: 12, marginLeft: 5 }}>Quiz-Karte</Text>
+              </View>
 
-          <Animated.View style={[styles.flipCard, backAnimatedStyle]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardSideLabel}>Rückseite:</Text>
-              <Text style={styles.cardText}>{card.back}</Text>
-            </View>
-          </Animated.View>
-        </TouchableOpacity>
+              <Text style={styles.cardSideLabel}>Frage:</Text>
+              <Text style={styles.cardText}>{quizCard.question}</Text>
 
-        <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.cardActionButton} onPress={() => startEditingCard(card)}>
-            <Edit size={16} color="#ffffff" />
-            <Text style={styles.cardActionText}>Bearbeiten</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.cardActionButton, styles.cardDeleteButton]}
-            onPress={() => deleteCard(card.id)}
-          >
-            <Trash2 size={16} color="#ff4d4d" />
-            <Text style={[styles.cardActionText, styles.cardDeleteText]}>Löschen</Text>
-          </TouchableOpacity>
+              <View style={{ marginTop: 10 }}>
+                <Text style={styles.cardSideLabel}>Antwortmöglichkeiten:</Text>
+                {quizCard.options.map((option, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: index === quizCard.correctAnswerIndex ? "rgba(76, 175, 80, 0.2)" : "transparent",
+                      padding: 8,
+                      borderRadius: 4,
+                      marginTop: 4,
+                    }}
+                  >
+                    <Text style={{ color: "#ffffff", fontSize: 14 }}>
+                      {index === quizCard.correctAnswerIndex ? "✓ " : ""}
+                      {option}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.cardActions}>
+            <TouchableOpacity style={styles.cardActionButton} onPress={() => startEditingCard(card)}>
+              <Edit size={16} color="#ffffff" />
+              <Text style={styles.cardActionText}>Bearbeiten</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cardActionButton, styles.cardDeleteButton]}
+              onPress={() => deleteCard(card.id)}
+            >
+              <Trash2 size={16} color="#ff4d4d" />
+              <Text style={[styles.cardActionText, styles.cardDeleteText]}>Löschen</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    )
+      )
+    } else {
+      // Standard card
+      const standardCard = card as StandardCard
+      return (
+        <View style={styles.cardItem}>
+          <TouchableOpacity activeOpacity={0.9} onPress={flipCard} style={styles.flipCardContainer}>
+            <Animated.View style={[styles.flipCard, frontAnimatedStyle]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardSideLabel}>Vorderseite:</Text>
+                <Text style={styles.cardText}>{standardCard.question}</Text>
+              </View>
+            </Animated.View>
+
+            <Animated.View style={[styles.flipCard, backAnimatedStyle]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardSideLabel}>Rückseite:</Text>
+                <Text style={styles.cardText}>{standardCard.answer}</Text>
+              </View>
+            </Animated.View>
+          </TouchableOpacity>
+
+          <View style={styles.cardActions}>
+            <TouchableOpacity style={styles.cardActionButton} onPress={() => startEditingCard(card)}>
+              <Edit size={16} color="#ffffff" />
+              <Text style={styles.cardActionText}>Bearbeiten</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cardActionButton, styles.cardDeleteButton]}
+              onPress={() => deleteCard(card.id)}
+            >
+              <Trash2 size={16} color="#ff4d4d" />
+              <Text style={[styles.cardActionText, styles.cardDeleteText]}>Löschen</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )
+    }
   }
 
   return (
@@ -610,31 +780,113 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.modalBody}>
+                  {/* Card Type Selection */}
+                  <View style={{ flexDirection: "row", marginBottom: 20 }}>
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        padding: 10,
+                        backgroundColor: cardType === "card" ? "#1E88E5" : "#2a2a2a",
+                        borderRadius: 8,
+                        marginRight: 5,
+                        alignItems: "center",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                      }}
+                      onPress={() => setCardType("card")}
+                    >
+                      <HelpCircle size={16} color="#ffffff" />
+                      <Text style={{ color: "#ffffff", marginLeft: 5 }}>Standard-Karte</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        padding: 10,
+                        backgroundColor: cardType === "quiz" ? "#1E88E5" : "#2a2a2a",
+                        borderRadius: 8,
+                        marginLeft: 5,
+                        alignItems: "center",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                      }}
+                      onPress={() => setCardType("quiz")}
+                    >
+                      <FileQuestion size={16} color="#ffffff" />
+                      <Text style={{ color: "#ffffff", marginLeft: 5 }}>Quiz-Karte</Text>
+                    </TouchableOpacity>
+                  </View>
+
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Vorderseite</Text>
+                    <Text style={styles.label}>Frage</Text>
                     <TextInput
                       style={[styles.input, styles.textArea]}
-                      value={cardFront}
-                      onChangeText={setCardFront}
-                      placeholder="Vorderseite der Karte"
+                      value={cardQuestion}
+                      onChangeText={setCardQuestion}
+                      placeholder="Frage eingeben"
                       placeholderTextColor="#666"
                       multiline
                       numberOfLines={4}
                     />
                   </View>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Rückseite</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      value={cardBack}
-                      onChangeText={setCardBack}
-                      placeholder="Rückseite der Karte"
-                      placeholderTextColor="#666"
-                      multiline
-                      numberOfLines={4}
-                    />
-                  </View>
+                  {cardType === "card" ? (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Antwort</Text>
+                      <TextInput
+                        style={[styles.input, styles.textArea]}
+                        value={cardAnswer}
+                        onChangeText={setCardAnswer}
+                        placeholder="Antwort eingeben"
+                        placeholderTextColor="#666"
+                        multiline
+                        numberOfLines={4}
+                      />
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={[styles.label, { marginBottom: 10 }]}>Antwortmöglichkeiten</Text>
+                      {cardOptions.map((option, index) => (
+                        <View key={index} style={{ marginBottom: 10 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <TouchableOpacity
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                borderWidth: 2,
+                                borderColor: correctAnswerIndex === index ? "#4CAF50" : "#666",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                marginRight: 10,
+                                backgroundColor:
+                                  correctAnswerIndex === index ? "rgba(76, 175, 80, 0.2)" : "transparent",
+                              }}
+                              onPress={() => setCorrectAnswerIndex(index)}
+                            >
+                              {correctAnswerIndex === index && (
+                                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: "#4CAF50" }} />
+                              )}
+                            </TouchableOpacity>
+                            <TextInput
+                              style={[styles.input, { flex: 1 }]}
+                              value={option}
+                              onChangeText={(text) => {
+                                const newOptions = [...cardOptions]
+                                newOptions[index] = text
+                                setCardOptions(newOptions)
+                              }}
+                              placeholder={`Option ${index + 1}`}
+                              placeholderTextColor="#666"
+                            />
+                          </View>
+                        </View>
+                      ))}
+                      <Text style={{ color: "#aaaaaa", fontSize: 12, marginTop: 5 }}>
+                        Wähle die richtige Antwort durch Antippen des Kreises aus.
+                      </Text>
+                    </>
+                  )}
                 </View>
 
                 <View style={styles.modalFooter}>
@@ -661,4 +913,3 @@ export default function HomeScreen() {
     </View>
   )
 }
-
