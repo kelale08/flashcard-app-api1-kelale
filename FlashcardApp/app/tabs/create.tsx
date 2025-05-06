@@ -81,7 +81,7 @@ export default function CreateDeckScreen() {
         id: deckId,
         name: deckName.trim(),
         description: deckDescription.trim(),
-        color: selectedColor, // Speichere die ausgewählte Farbe
+        color: selectedColor, 
         cards: defaultCards,
         createdAt: new Date().toISOString(),
       }

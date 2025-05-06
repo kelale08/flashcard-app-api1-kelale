@@ -15,7 +15,7 @@ import {
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { router, useFocusEffect } from "expo-router"
-import { Trash2, Edit, Plus, X, ChevronRight, Save, MoreVertical, HelpCircle, FileQuestion } from "lucide-react-native"
+import { Trash2, Edit, X, Plus, ChevronRight, Save, MoreVertical, HelpCircle, FileQuestion } from "lucide-react-native"
 import { type Deck, DECK_COLORS } from "../types"
 import styles from "../styles"
 import ColorPicker from "react-native-wheel-color-picker"
